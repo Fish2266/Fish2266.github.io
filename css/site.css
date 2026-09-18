@@ -1,0 +1,389 @@
+:root {
+  --ink: #f4fbff;
+  --edge: rgba(255, 255, 255, 0.40);
+  --card-w: 268px;
+  --card-h: 186px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  /* The sea gradient sits behind the canvas, so the brief moment before the
+     shader finishes compiling looks like the scene rather than a flat slab.
+     Once the canvas draws, this is covered. */
+  background:
+    linear-gradient(180deg, #7cb8dd 0%, #cfe6ef 27%, #1e7a92 29%, #0c3d55 72%, #06263a 100%);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+#sea {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* A touch of atmospheric bloom sitting over the render. */
+#haze {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: 0.10;
+  background:
+    radial-gradient(52vw 34vh at 72% 22%, rgba(255, 216, 160, 0.20), transparent 70%),
+    radial-gradient(120vw 40vh at 50% 29%, rgba(180, 225, 255, 0.10), transparent 72%);
+}
+
+main {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* A wide soft band across the top: reads as sky, and gives the title something
+   to sit against without the oval smudge a radial scrim leaves behind. */
+#scrim {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: 34vh;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(4, 26, 46, 0.34) 0%, rgba(4, 26, 46, 0.14) 44%, transparent 100%);
+}
+
+/* --------------------------------------------------------------- the title */
+
+.title {
+  position: absolute;
+  top: clamp(22px, 5.4vh, 56px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  width: max-content;
+  max-width: 94vw;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  font-size: clamp(1.7rem, 5.4vw, 4.3rem);
+  font-weight: 600;
+  letter-spacing: -0.020em;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  will-change: opacity, filter, transform;
+}
+
+.title span {
+  color: #ffffff;
+  /* One tight shadow to seat it, one wide one for separation from the sky. */
+  text-shadow:
+    0 1px 2px rgba(3, 26, 44, 0.50),
+    0 2px 16px rgba(2, 20, 36, 0.55),
+    0 6px 44px rgba(2, 18, 32, 0.45);
+}
+
+/* The domain suffix steps back so the handle reads first -- but stays legible,
+   and keeps the lockup's tracking so there is no seam at the dot. */
+.title .tld {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.80);
+}
+
+/* ---------------------------------------------------------------- the fleet */
+
+#stage { position: absolute; inset: 0; }
+
+.card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--card-w);
+  height: var(--card-h);
+  transform-origin: 0 0;
+  transform:
+    translate3d(var(--tx, 50vw), var(--ty, 60vh), 0)
+    scale(var(--sc, 1))
+    perspective(820px)
+    rotateZ(var(--rot, 0deg))
+    rotateX(var(--pit, 0deg))
+    translate(-50%, -50%);
+  pointer-events: auto;
+  text-decoration: none;
+  color: inherit;
+  opacity: 0;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Reflection on the water: stretched, rippled, sheared by the local slope. */
+.wake {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 6px);
+  width: 128%;
+  height: 46%;
+  transform: translateX(-50%) rotate(calc(-1 * var(--rot, 0deg))) translateX(var(--skew, 0px));
+  /* A contact shadow directly under the float, with the float's own colour
+     bleeding into the water beneath it. */
+  background:
+    radial-gradient(58% 60% at 50% 0%, rgba(4, 26, 42, 0.55), rgba(4, 26, 42, 0) 72%),
+    radial-gradient(46% 78% at 50% 6%, var(--glow, rgba(120, 220, 230, 0.5)), transparent 70%);
+  filter: blur(7px);
+  opacity: calc((0.72 - var(--lift, 0) * 0.36) * (1 - var(--far, 0) * 0.30));
+  -webkit-mask-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.95), transparent 84%),
+    repeating-linear-gradient(180deg, #000 0 3px, rgba(0, 0, 0, 0.28) 3px 7px);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.95), transparent 84%),
+    repeating-linear-gradient(180deg, #000 0 3px, rgba(0, 0, 0, 0.28) 3px 7px);
+  mask-composite: intersect;
+  pointer-events: none;
+}
+
+.face {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  height: 100%;
+  /* Bottom room for the float's near arc, which crosses the card. */
+  padding: 18px 20px 52px;
+  border-radius: 20px;
+  /* Light enough that the sea behind actually shows through and changes it. */
+  background:
+    linear-gradient(200deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0.05) 30%, rgba(3, 20, 36, 0.52) 100%),
+    rgba(5, 25, 41, 0.40);
+  border: 1px solid var(--edge);
+  backdrop-filter: blur(30px) saturate(165%);
+  -webkit-backdrop-filter: blur(30px) saturate(165%);
+  box-shadow:
+    0 26px 54px -16px rgba(1, 16, 28, 0.82),
+    0 1px 0 0 rgba(255, 255, 255, 0.34) inset,
+    0 -14px 30px -18px rgba(255, 255, 255, 0.30) inset;
+  overflow: hidden;
+  transition: transform 0.45s cubic-bezier(.2,.9,.3,1), box-shadow 0.45s ease, border-color 0.45s ease;
+}
+
+/* Fine grain -- what actually reads as glass rather than flat plastic. */
+.face::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.30;
+  z-index: 3;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='90' height='90' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* Sun sliding along the glass -- lit from the top right, like the sky is. */
+.face::before {
+  content: '';
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(256deg, transparent 38%, rgba(255, 255, 255, 0.28) 48%, transparent 58%);
+  z-index: 4;
+  transform: translateX(34%);
+  transition: transform 0.9s cubic-bezier(.24,.8,.3,1), opacity .5s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tag {
+  position: absolute;
+  top: 15px;
+  left: 18px;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+  padding: 4px 9px 3px;
+  border-radius: 99px;
+  color: var(--tag-ink, #b6f4f6);
+  background: rgba(4, 22, 36, 0.82);
+  border: 1px solid var(--tag-edge, rgba(120, 232, 238, 0.52));
+  white-space: nowrap;
+}
+
+.name {
+  position: relative;
+  z-index: 2;
+  margin-top: auto;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.026em;
+  line-height: 1.04;
+  text-shadow: 0 1px 3px rgba(2, 16, 28, 0.62), 0 2px 20px rgba(2, 16, 28, 0.42);
+}
+
+.desc {
+  position: relative;
+  z-index: 2;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: rgba(240, 251, 255, 0.95);
+  text-shadow: 0 1px 3px rgba(2, 16, 28, 0.70);
+}
+
+.go {
+  position: absolute;
+  z-index: 2;
+  top: 13px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px 4px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--tag-ink, #b6f4f6);
+  /* Same dark plate as the tag. This sits on the lightest corner of the face,
+     over whatever the sea happens to be doing behind it. */
+  background: rgba(4, 22, 36, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  transition: gap 0.35s ease, background 0.35s ease, border-color 0.35s ease;
+}
+
+.card:hover .face,
+.card:focus-visible .face {
+  transform: translateY(-3px);
+  border-color: rgba(255, 255, 255, 0.66);
+  box-shadow:
+    0 36px 64px -22px rgba(2, 20, 34, 0.84),
+    0 1px 0 0 rgba(255, 255, 255, 0.50) inset,
+    0 -14px 30px -18px rgba(255, 255, 255, 0.44) inset;
+}
+
+.card:hover .face::before { transform: translateX(-34%); opacity: 1; }
+.card:hover .go, .card:focus-visible .go { gap: 9px; background: rgba(6, 32, 50, 0.72); border-color: var(--tag-edge, rgba(255, 255, 255, 0.4)); }
+.card:focus-visible { outline: none; }
+.card:focus-visible .face { outline: 2px solid var(--tag-edge, #7ee8ee); outline-offset: 4px; }
+
+/* Accents. Each one now drives the tag, the arrow, the focus ring and the
+   colour cast in the reflection, instead of being invisible at 20% alpha. */
+.card[data-hue="lagoon"] { --glow: rgba(96, 226, 226, 0.50); --tag-ink: #9df2f4; --tag-edge: rgba(110, 230, 236, 0.58); 
+  --tube-dark: #0b6f88; --tube: #17a8c6; --tube-lit: #7ce6f4;
+}
+.card[data-hue="kelp"]   { --glow: rgba(126, 226, 150, 0.44); --tag-ink: #a8f3bd; --tag-edge: rgba(126, 230, 158, 0.56); 
+  --tube-dark: #1a6b33; --tube: #2fa04d; --tube-lit: #92e59f;
+}
+.card[data-hue="dusk"]   { --glow: rgba(160, 172, 255, 0.46); --tag-ink: #c3caff; --tag-edge: rgba(160, 172, 255, 0.60); 
+  --tube-dark: #3b3f8e; --tube: #5f63c8; --tube-lit: #b3b8ff;
+}
+.card[data-hue="coral"]  { --glow: rgba(255, 158, 116, 0.52); --tag-ink: #ffc4a4; --tag-edge: rgba(255, 168, 128, 0.62); 
+  --tube-dark: #9c3a20; --tube: #e0623a; --tube-lit: #ffb492;
+}
+
+/* ------------------------------------------------- narrow screens: a column */
+
+html.flow, html.flow body { overflow-y: auto; overflow-x: hidden; height: auto; }
+html.flow main { position: static; pointer-events: auto; }
+
+html.flow .title {
+  position: static;
+  transform: none !important;
+  filter: none !important;
+  margin: 0 auto;
+  padding: 30px 18px 0;
+  text-align: center;
+  width: auto;
+  max-width: none;
+  white-space: nowrap;
+  font-size: clamp(1.35rem, 7.6vw, 2.5rem);
+}
+
+html.flow #stage {
+  position: static;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  max-width: 440px;
+  margin: 0 auto;
+  /* Centre the fleet in whatever room is left under the title, instead of
+     pinning it to a magic offset that only balances at one window size. */
+  padding: clamp(26px, calc((100vh - 620px) / 2), 210px) 18px 40px;
+}
+
+/* Tablet portrait: the column had been leaving ~200px dead on each side. */
+@media (min-width: 700px) {
+  html.flow #stage { max-width: 560px; gap: 18px; }
+}
+
+/* Wide but short -- a laptop window, or a half-screen split. Two columns use
+   the room and keep all four projects above the fold. */
+@media (min-aspect-ratio: 13/10) {
+  html.flow #stage {
+    grid-template-columns: 1fr 1fr;
+    max-width: 880px;
+    gap: 18px;
+    padding: clamp(26px, calc((100vh - 380px) / 2), 220px) 18px 40px;
+  }
+}
+
+html.flow .card {
+  /* The procession sets opacity per frame; the column never runs that code,
+     so it has to undo the hidden-by-default state itself. */
+  opacity: 1 !important;
+  position: static;
+  width: 100%;
+  height: auto;
+  transform: translateY(var(--bob, 0px)) !important;
+  z-index: auto !important;
+}
+
+html.flow .face { height: auto; min-height: 104px; padding: 15px 18px 17px; }
+html.flow .wake { display: none; }
+html.flow /* No WebGL2: hide the dead canvas so the sea gradient on <body> shows through. */
+.no-webgl #sea { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .title { filter: none; }
+  .face::before { transition: none; }
+}
+
+/* ------------------------------------------------------------------- fauna */
+
+#fauna {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sprite {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity;
+}
+
+.sprite svg { width: 100%; height: 100%; overflow: visible; display: block; }
+
+/* Sprites are hazed toward the sky with distance, the same way the sea is, so
+   they sit in the air instead of on top of the glass. */
+.sprite { --haze: 0; }
+.gull svg { transition: none; }
+
+.gull .body { fill: #eef4f8; }
+.gull .wing { fill: #dfe9f0; transform-origin: 0 0; }
+.gull .wing-l { transform: rotate(calc(-1 * var(--flap, 0deg))); }
+.gull .wing-r { transform: rotate(var(--flap, 0deg)); }
+.gull svg {
+  filter: drop-shadow(0 1px 1px rgba(20, 50, 70, 0.22));
+  opacity: calc(1 - var(--haze) * 0.55);
+}
+
+html.flow #fauna { display: none; }

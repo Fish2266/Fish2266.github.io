@@ -1,0 +1,5 @@
+# Intermediate output from the tracing scripts
+*.mask
+*.json
+*_overlay.png
+*_bodyonly.png
