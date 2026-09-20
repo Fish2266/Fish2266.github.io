@@ -346,7 +346,9 @@ html.flow .card {
 
 html.flow .face { height: auto; min-height: 104px; padding: 15px 18px 17px; }
 html.flow .wake { display: none; }
-html.flow /* No WebGL2: hide the dead canvas so the sea gradient on <body> shows through. */
+/* No WebGL2: hide the dead canvas so the sea gradient on <body> shows through.
+   (The comment used to sit between `html.flow` and this selector, which glued
+   the two into one descendant selector that never matched.) */
 .no-webgl #sea { display: none; }
 
 @media (prefers-reduced-motion: reduce) {

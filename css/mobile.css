@@ -1,0 +1,120 @@
+/* ---------------------------------------------------------------------------
+   Phone layer (iOS portrait). Loaded after site.css.
+
+   A phone always lands in the column layout (`html.flow`) — the procession
+   only runs when the viewport is wide enough to sail cards across. Everything
+   here refines that column.
+   ------------------------------------------------------------------------ */
+
+/* The column was pinned under the title by a computed top padding, which left
+   a dead band of water below the last card — 172px of it on a 393x852 screen.
+   The wordmark stays at the top, where the sky scrim is darkest and it has
+   something to read against; the fleet centres itself in whatever is left.
+   `min-height` means a screen too short for all four simply scrolls, rather
+   than centring the stack and putting the first card out of reach. */
+html.flow main {
+  display: flex;
+  flex-direction: column;
+  min-height: 100svh;
+}
+
+html.flow #stage {
+  flex: 1 1 auto;
+  align-content: center;
+  padding-top: clamp(16px, 3svh, 40px);
+  padding-bottom: clamp(16px, 3svh, 40px);
+}
+
+/* `viewport-fit=cover` runs the sea under the status bar and the home
+   indicator, which is what we want for the water — but not for the wordmark
+   or the last card. */
+html.flow .title { padding-top: calc(24px + env(safe-area-inset-top)); }
+html.flow #stage {
+  padding-left: calc(18px + env(safe-area-inset-left));
+  padding-right: calc(18px + env(safe-area-inset-right));
+  padding-bottom: calc(clamp(16px, 3svh, 40px) + env(safe-area-inset-bottom));
+}
+
+/* Safari reports `vh` against the toolbar-less viewport, so the scrim ran
+   further down the screen than the sky it is meant to cover. */
+@supports (height: 100svh) {
+  #scrim { height: 34svh; }
+}
+
+/* On a wide window the wordmark sits over open sky. On a phone it lands on
+   the cloud band, where white-on-near-white left it barely there — and the
+   status bar sits in the same strip. Deepen the top of the scrim and give the
+   letters a closer shadow. */
+@media (max-width: 720px) {
+  #scrim {
+    height: 30svh;
+    background: linear-gradient(180deg,
+      rgba(4, 26, 46, 0.62) 0%,
+      rgba(4, 26, 46, 0.40) 34%,
+      rgba(4, 26, 46, 0.12) 72%,
+      transparent 100%);
+  }
+  .title span {
+    text-shadow:
+      0 1px 2px rgba(3, 26, 44, 0.72),
+      0 2px 10px rgba(2, 20, 36, 0.70),
+      0 6px 34px rgba(2, 18, 32, 0.55);
+  }
+  .title .tld { color: rgba(255, 255, 255, 0.86); }
+}
+
+@media (max-width: 720px) {
+  /* The glass is tuned for the deep water the fleet sails through. Sitting
+     still against the bright horizon band, the same panel left white text on
+     near-white sky. Weight the plate down so every card reads the same
+     wherever it lands. */
+  html.flow .face {
+    background:
+      linear-gradient(200deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.04) 26%, rgba(3, 20, 36, 0.68) 100%),
+      rgba(5, 25, 41, 0.56);
+    /* 30px of blur over a live WebGL canvas is the most expensive thing on
+       the page, and four of them stack up on a phone. */
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    min-height: 112px;
+    padding: 15px 17px 16px;
+  }
+
+  html.flow .name { font-size: 24px; }
+  html.flow .desc { font-size: 13.5px; }
+
+  /* Pill and arrow were 22-24px tall and sat in the corners of a card that is
+     itself the link, so a near miss did nothing. They are decoration here —
+     the whole card is the target — but give them room to breathe. */
+  .tag { top: 14px; left: 17px; }
+  .go { top: 12px; right: 15px; padding: 5px 10px 5px 11px; }
+}
+
+/* Small phones: "fish2266.github.io" is `white-space: nowrap`, and at 7.6vw it
+   just fits 375pt. Below that it would run under the edges. */
+@media (max-width: 370px) {
+  html.flow .title { font-size: clamp(1.15rem, 7vw, 1.4rem); }
+  html.flow .name { font-size: 22px; }
+  html.flow #stage { gap: 13px; }
+}
+
+/* Touch: the lift and the sweep of light across the glass are hover effects,
+   so on a phone they latch on after a tap and stay. */
+@media (hover: none) {
+  .card:hover .face { transform: none; border-color: var(--edge); box-shadow:
+    0 26px 54px -16px rgba(1, 16, 28, 0.82),
+    0 1px 0 0 rgba(255, 255, 255, 0.34) inset,
+    0 -14px 30px -18px rgba(255, 255, 255, 0.30) inset; }
+  .card:hover .face::before { transform: translateX(34%); opacity: 0; }
+  .card:hover .go { gap: 5px; background: rgba(4, 22, 36, 0.82); border-color: rgba(255, 255, 255, 0.16); }
+
+  .card:active .face { transform: scale(0.985); border-color: rgba(255, 255, 255, 0.60); }
+}
+
+/* Landscape on a phone: ~390pt tall, so let it scroll from the top rather than
+   trying to centre a column that does not fit. */
+@media (max-height: 460px) and (orientation: landscape) {
+  html.flow main { justify-content: flex-start; }
+  html.flow .title { padding-top: calc(14px + env(safe-area-inset-top)); }
+  html.flow #stage { padding-top: 16px; }
+}
