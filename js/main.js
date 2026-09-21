@@ -13,11 +13,17 @@ const fauna  = new Fauna(document.querySelector('main'));
 if (!ocean.ok) document.body.classList.add('no-webgl');
 
 function resize() {
-  const w = window.innerWidth, h = window.innerHeight;
+  // #sea is `position: fixed; inset: 0`, so CSS already stretches it over the
+  // whole viewport — including the strip iOS Safari keeps behind its toolbars.
+  // Overriding that with window.innerHeight painted the sea to the *visual*
+  // viewport instead, which is shorter whenever the toolbars are up, and left
+  // a band of bare page gradient along the bottom. Measure the element and let
+  // CSS decide how big it is.
+  const r = canvas.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width));
+  const h = Math.max(1, Math.round(r.height));
   camera.resize(w, h);
   camera.update();
-  canvas.style.width = w + 'px';
-  canvas.style.height = h + 'px';
   ocean.resize(w, h);
   fleet.resize();
 }
@@ -75,6 +81,12 @@ window.addEventListener('wheel', (e) => {
 }, { passive: true });
 
 window.addEventListener('resize', resize, { passive: true });
+// iOS slides its toolbars away without firing `resize` on the window; the
+// visual viewport is what actually changed, so listen there too.
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', resize, { passive: true });
+}
+window.addEventListener('orientationchange', resize, { passive: true });
 resize();
 
 // ?still=<seconds> renders one settled frame and stops: for screenshots and
