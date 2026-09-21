@@ -118,3 +118,39 @@ html.flow #stage {
   html.flow .title { padding-top: calc(14px + env(safe-area-inset-top)); }
   html.flow #stage { padding-top: 16px; }
 }
+
+/* ---------------------------------------------------------------------------
+   Edge to edge on iOS.
+
+   iOS 26 Safari draws the page behind the status bar and behind the glass
+   toolbar, but `position: fixed; inset: 0` still means the *layout* viewport:
+   it starts under the Dynamic Island, stops above the toolbar, and changes
+   height every time the toolbar expands or collapses. So the sea stopped
+   short at the top and the status bar showed a flat band instead of sky.
+
+   On touch screens the backdrop runs --overscan px past both edges, and is
+   sized in lvh so it does not move with the toolbar. main.js frames the camera
+   on the visible part, so the picture on screen is unchanged — there is just
+   more of it. Desktop keeps --overscan at 0 and behaves exactly as before.
+   ------------------------------------------------------------------------ */
+:root { --overscan: 0px; }
+@media (pointer: coarse) { :root { --overscan: 160px; } }
+
+#sea {
+  top: calc(-1 * var(--overscan));
+  bottom: auto;
+  height: calc(100vh + 2 * var(--overscan));
+}
+#haze { inset: calc(-1 * var(--overscan)) 0; }
+@supports (height: 100lvh) {
+  #sea { height: calc(100lvh + 2 * var(--overscan)); }
+}
+
+/* The scrim darkens the top of the sky behind the wordmark; it now starts up
+   behind the clock too, which keeps the status text legible over the clouds. */
+@media (max-width: 720px) {
+  #scrim {
+    top: calc(-1 * var(--overscan));
+    height: calc(30svh + var(--overscan));
+  }
+}

@@ -19,11 +19,19 @@ function resize() {
   // viewport instead, which is shorter whenever the toolbars are up, and left
   // a band of bare page gradient along the bottom. Measure the element and let
   // CSS decide how big it is.
+  //
+  // On a phone the canvas also runs --overscan px past the top and bottom of the
+  // screen, so the scene carries on behind the Dynamic Island and the toolbar
+  // instead of stopping at the layout viewport. The camera is framed on the
+  // visible part only; the ocean is told how much taller the canvas is.
   const r = canvas.getBoundingClientRect();
+  const over = parseFloat(getComputedStyle(canvas).getPropertyValue('--overscan')) || 0;
   const w = Math.max(1, Math.round(r.width));
   const h = Math.max(1, Math.round(r.height));
-  camera.resize(w, h);
+  const visible = Math.max(1, h - 2 * over);
+  camera.resize(w, visible);
   camera.update();
+  ocean.overscanK = h / visible;
   ocean.resize(w, h);
   fleet.resize();
 }

@@ -1175,8 +1175,13 @@ export class Ocean {
     gl.uniform3f(u.uCamFwd, camera.fwd.x, camera.fwd.y, camera.fwd.z);
     gl.uniform3f(u.uCamRight, camera.right.x, camera.right.y, camera.right.z);
     gl.uniform3f(u.uCamUp, camera.up.x, camera.up.y, camera.up.z);
-    gl.uniform1f(u.uTanHalf, camera.tanHalf);
-    gl.uniform1f(u.uAspect, camera.aspect);
+    // The canvas can run past the visible screen (see main.js). The shader is a
+    // pinhole camera, linear in tangent space, so stretching the half-height
+    // tangent by the same factor as the canvas keeps every on-screen pixel
+    // exactly where it was and simply draws more sky above and more sea below.
+    const k = this.overscanK || 1;
+    gl.uniform1f(u.uTanHalf, camera.tanHalf * k);
+    gl.uniform1f(u.uAspect, camera.aspect / k);
     gl.uniform3f(u.uSunDir, this.sun[0], this.sun[1], this.sun[2]);
     gl.uniform1f(u.uDetail, this.detail);
 
