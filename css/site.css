@@ -11,10 +11,19 @@ html, body {
   height: 100%;
   margin: 0;
   overflow: hidden;
+  /* A solid colour *as well as* the gradient. A gradient only paints the root's
+     own box, and iOS fills the strips behind the status bar and the toolbar
+     from the root's background-COLOR — with none set it fell back to the dark
+     colour-scheme default and put a black band across the top and bottom of
+     the screen. This value is sampled from the water at the bottom edge of the
+     rendered scene, which is the taller of the two strips, and it is dark
+     enough for Safari's white status text to stay legible. */
+  background-color: #075886;
+
   /* The sea gradient sits behind the canvas, so the brief moment before the
      shader finishes compiling looks like the scene rather than a flat slab.
      Once the canvas draws, this is covered. */
-  background:
+  background-image:
     linear-gradient(180deg, #7cb8dd 0%, #cfe6ef 27%, #1e7a92 29%, #0c3d55 72%, #06263a 100%);
 }
 
