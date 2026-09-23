@@ -40,6 +40,9 @@ const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let clock = 8.0;
 let intro = 0;
+// Nothing on screen moves until the sea has drawn once: before that the canvas
+// is empty, and fading the title in over it wasted the intro on a blank page.
+let live = false;
 
 function step(dt) {
   // The sea is integrated with a clamped step so a long stall cannot teleport
@@ -49,29 +52,74 @@ function step(dt) {
   const dtSea = Math.min(dt, 0.05);
   clock += dtSea;
 
-  intro = Math.min(1, intro + dt / 1.25);
-  const e = intro * intro * (3 - 2 * intro);
-  title.style.opacity = e.toFixed(3);
-  if (!reduced) {
-    title.style.filter = e < 1 ? `blur(${((1 - e) * 8).toFixed(2)}px)` : 'none';
-    title.style.transform = `translateX(-50%) translateY(${((1 - e) * 16).toFixed(2)}px)`;
-  }
-
   camera.update();
   fleet.update(clock, dt);
   fauna.update(clock, dt);
   // Floats and breaching dolphins both disturb the same water.
-  ocean.render(clock, dtSea, fleet.wakes.concat(fauna.splashes), fleet.floats, fauna.creatures);
+  const drew = ocean.render(clock, dtSea, [fleet.wakes, fauna.splashes], fleet.floats, fauna.creatures);
+  if (!live && (drew || !ocean.ok)) {
+    live = true;
+    // The canvas fades up over the CSS sea once it has a frame to show.
+    if (drew) canvas.classList.add('live');
+    else document.body.classList.add('no-webgl');    // the shader failed to build
+  }
+
+  // Reduced motion skips the fade rather than freezing it: the loop runs with
+  // dt = 0 there, so the title used to stay at opacity 0 for good.
+  if (intro < 1 && live) {
+    intro = reduced ? 1 : Math.min(1, intro + dt / 1.25);
+    const e = intro * intro * (3 - 2 * intro);
+    title.style.opacity = e.toFixed(3);
+    if (!reduced) {
+      title.style.filter = e < 1 ? `blur(${((1 - e) * 8).toFixed(2)}px)` : 'none';
+      title.style.transform = `translateX(-50%) translateY(${((1 - e) * 16).toFixed(2)}px)`;
+    }
+  }
+  return drew;
 }
 
 let last = performance.now() / 1000;
+let pending = false;
+// Reduced motion draws one still frame and then only redraws when something
+// changes it. It used to re-render the identical picture at full frame rate.
+let dirty = true;
+// ?still= (below) draws by hand and must never start the loop.
+let still = false;
+
+// On 120Hz and faster screens, rAF fires more often than the sea needs:
+// every frame of this shader is real GPU work, and doubling it bought nothing
+// you could see but a hot laptop and a flat battery. Frames closer together
+// than this are skipped, which halves 120/144Hz but leaves 60, 90 and 100Hz
+// untouched.
+const MIN_GAP = 0.0095;
 
 function frame(now) {
+  pending = false;
   now /= 1000;
+  if (now - last < MIN_GAP) { kick(); return; }
   const dt = Math.max(0, Math.min(now - last, 0.25));
   last = now;
-  step(reduced ? 0 : dt);
+  ocean.stamp = now * 1000;
+  if (reduced) {
+    if (step(0) || !ocean.ok) dirty = false;
+    if (dirty) kick();
+    return;
+  }
+  step(dt);
+  kick();
+}
+
+function kick() {
+  if (pending) return;
+  pending = true;
   requestAnimationFrame(frame);
+}
+
+function redraw() {
+  // Resizing clears the canvas, so a still redraws its frame on the spot.
+  if (still) { step(0); return; }
+  dirty = true;
+  kick();
 }
 
 // Scrolling drives the procession: down speeds it up, up slows it and can run
@@ -88,13 +136,20 @@ window.addEventListener('wheel', (e) => {
   fleet.nudge(Math.max(-1.2, Math.min(1.2, e.deltaY * 0.004)));
 }, { passive: true });
 
-window.addEventListener('resize', resize, { passive: true });
+function onResize() {
+  resize();
+  redraw();
+}
+
+window.addEventListener('resize', onResize, { passive: true });
 // iOS slides its toolbars away without firing `resize` on the window; the
 // visual viewport is what actually changed, so listen there too.
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', resize, { passive: true });
+  window.visualViewport.addEventListener('resize', onResize, { passive: true });
 }
-window.addEventListener('orientationchange', resize, { passive: true });
+window.addEventListener('orientationchange', onResize, { passive: true });
+// A restored WebGL context comes back blank.
+canvas.addEventListener('webglcontextrestored', redraw);
 resize();
 
 // ?still=<seconds> renders one settled frame and stops: for screenshots and
@@ -106,14 +161,22 @@ if (q.has('still')) {
   // The floats are a physics sim now, so a still has to let them settle
   // rather than rendering them at their initial state.
   const warm = 2.0;
+  still = true;
+  ocean.adapt = false;
+  ocean.setScale(ocean.maxScale);   // a still is for looking at: full resolution
   ocean.forceReady();          // a still cannot wait for a later frame
   clock = at - warm;
   intro = 1;
+  live = true;
+  title.style.opacity = '1';
+  title.style.filter = 'none';
+  title.style.transform = 'translateX(-50%)';
+  canvas.classList.add('live');
   fleet.seek(at - warm);
   for (let i = 0; i < Math.round(warm * 60); i++) step(1 / 60);
 } else {
   step(0.016);
-  requestAnimationFrame(frame);
+  kick();
 }
 
 // Lets a frame be driven by hand when rAF is throttled (hidden preview panes,

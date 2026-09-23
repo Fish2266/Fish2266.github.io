@@ -41,6 +41,26 @@ falls back to a scrollable column over the same ocean.
 
 ## Performance
 
-The renderer starts at up to 1.5x device pixel ratio and steps resolution down,
-then drops the chop detail, if frames run long. `prefers-reduced-motion` freezes
-the sea. Without WebGL2 the page falls back to a CSS gradient.
+Cost is almost all per-pixel shader work, so resolution is the main control.
+The canvas starts from a pixel budget (about 1.25M pixels on desktop, 0.5M on
+touch screens) and then adjusts continuously, between 0.5x and 1.25x of CSS
+pixels, to keep frames on time. It reads the display's refresh interval from
+the frames drawn while the shader compiles, steps down when frames run late or
+fall behind on average, and climbs back in small steps when there is room,
+staying clear of any scale that recently proved too slow. Where the browser
+exposes GPU timers it uses them as a guard as well. Wave detail only gives way
+once the resolution is already low.
+
+The rings are intersected analytically (a ray-torus quartic) rather than
+sphere-traced, and their normals are closed-form; the animals are still
+marched. The float wakes are culled to a world-space box. On 120Hz and faster
+screens it draws at most every other refresh. `prefers-reduced-motion` draws
+one still frame and only redraws on resize.
+
+The canvas stays hidden until its first frame is drawn, so the CSS gradient
+stands in while the shader compiles. A lost WebGL context (common on iOS) is
+rebuilt in place. Without WebGL2, or if the shader fails to build, the page
+falls back to the CSS gradient; without JavaScript, a `<noscript>` column
+lists the projects.
+
+`og.jpg` is a `?still=10` frame at 1200x630, for link previews.

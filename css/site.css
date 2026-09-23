@@ -40,7 +40,13 @@ body {
   width: 100%;
   height: 100%;
   display: block;
+  /* An undrawn opaque WebGL canvas shows as solid black, and on a phone the
+     shader can take the best part of a second to build. Keep it out of sight
+     until main.js has a frame for it, so the gradient behind stands in. */
+  opacity: 0;
+  transition: opacity 0.6s ease;
 }
+#sea.live { opacity: 1; }
 
 /* A touch of atmospheric bloom sitting over the render. */
 #haze {
@@ -353,7 +359,11 @@ html.flow .card {
   z-index: auto !important;
 }
 
-html.flow .face { height: auto; min-height: 104px; padding: 15px 18px 17px; }
+/* The tag and the Open pill sit absolutely in the top corners, so the copy
+   has to clear them itself. Leaning on min-height to push the name down left
+   it touching the pill, and a description that wrapped put them on top of
+   each other. */
+html.flow .face { height: auto; min-height: 0; padding: 46px 18px 17px; }
 html.flow .wake { display: none; }
 /* No WebGL2: hide the dead canvas so the sea gradient on <body> shows through.
    (The comment used to sit between `html.flow` and this selector, which glued
@@ -362,6 +372,7 @@ html.flow .wake { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .title { filter: none; }
+  #sea { transition: none; }
   .face::before { transition: none; }
 }
 
