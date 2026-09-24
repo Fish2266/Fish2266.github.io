@@ -16,7 +16,7 @@ const GAP_FACTOR = 1.12;  // loop length as a multiple of the on-screen span
 
 // Each card keeps its own distance, so the procession has depth rather than
 // running along a single rail.
-const DEPTHS = [0.90, -2.00, 1.70, -1.10];
+const DEPTHS = [0.90, -2.00, 1.70, -1.10, 0.20];
 
 // Vinyl colours, authored as sRGB and handed over in linear light because the
 // shader grades everything in linear.
@@ -25,6 +25,7 @@ const HUES = {
   kelp:   [0.18, 0.66, 0.30],
   dusk:   [0.40, 0.42, 0.85],
   coral:  [0.95, 0.40, 0.22],
+  sun:    [0.88, 0.66, 0.13],
 };
 const lin = (c) => c.map((v) => Math.pow(v, 2.2));
 

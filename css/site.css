@@ -301,6 +301,9 @@ main {
 .card[data-hue="coral"]  { --glow: rgba(255, 158, 116, 0.52); --tag-ink: #ffc4a4; --tag-edge: rgba(255, 168, 128, 0.62); 
   --tube-dark: #9c3a20; --tube: #e0623a; --tube-lit: #ffb492;
 }
+.card[data-hue="sun"]    { --glow: rgba(255, 214, 102, 0.50); --tag-ink: #ffe29a; --tag-edge: rgba(255, 214, 110, 0.62); 
+  --tube-dark: #9a6a0c; --tube: #e0a820; --tube-lit: #ffe08a;
+}
 
 /* ------------------------------------------------- narrow screens: a column */
 
