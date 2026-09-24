@@ -19,6 +19,19 @@ head off to the right before coming round again.
 | `js/main.js` | Resize, the frame loop, and the `?still=` harness. |
 | `css/site.css` | The cards, the title, and the column layout used on narrow screens. |
 
+## Shipping a change
+
+Pages tells browsers to keep css and js for ten minutes, so every local link
+and `import` carries `?v=N`. Bump it everywhere on any css/js change, or a
+refresh mixes a new `index.html` with old scripts:
+
+```bash
+sed -i '' -E 's/\?v=[0-9]+/?v=3/g' index.html js/*.js
+```
+
+Keep one number across all files: `camera.js` loaded under two different URLs
+would run as two separate modules.
+
 ## Running it locally
 
 ```bash

@@ -1,6 +1,6 @@
-import { SEA_GLSL } from './waves.js';
-import { camera } from './camera.js';
-import { CREATURE_GLSL } from './creatures.data.js';
+import { SEA_GLSL } from './waves.js?v=2';
+import { camera } from './camera.js?v=2';
+import { CREATURE_GLSL } from './creatures.data.js?v=2';
 
 const VERT = `#version 300 es
 void main() {

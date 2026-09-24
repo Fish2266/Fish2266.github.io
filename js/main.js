@@ -1,7 +1,7 @@
-import { camera } from './camera.js';
-import { Ocean } from './ocean.js';
-import { Fleet } from './cards.js';
-import { Fauna } from './fauna.js';
+import { camera } from './camera.js?v=2';
+import { Ocean } from './ocean.js?v=2';
+import { Fleet } from './cards.js?v=2';
+import { Fauna } from './fauna.js?v=2';
 
 const canvas = document.getElementById('sea');
 const stage  = document.getElementById('stage');

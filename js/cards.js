@@ -1,5 +1,5 @@
-import { sampleSea } from './waves.js';
-import { camera } from './camera.js';
+import { sampleSea } from './waves.js?v=2';
+import { camera } from './camera.js?v=2';
 
 // Pixels per metre at the procession's nominal depth. Cards are authored at
 // their CSS size for this value and scaled from it, so type lands near the

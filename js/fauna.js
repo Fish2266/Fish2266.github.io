@@ -1,5 +1,5 @@
-import { sampleSea } from './waves.js';
-import { camera } from './camera.js';
+import { sampleSea } from './waves.js?v=2';
+import { camera } from './camera.js?v=2';
 
 // Everything alive in the scene. All of it is world-positioned and projected
 // through the same camera as the sea and the floats, so one perspective and one
